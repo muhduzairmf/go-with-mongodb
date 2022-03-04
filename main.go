@@ -9,6 +9,7 @@ import (
 
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -127,6 +128,63 @@ func readData(ctx context.Context, videoCollection *mongo.Collection, creatorCol
 	fmt.Println(videosSorted)
 }
 
+func updateData(ctx context.Context, videoCollection *mongo.Collection, creatorCollection *mongo.Collection)  {
+	// #1 Update one document by the id
+	id, err := primitive.ObjectIDFromHex("62201a0d854b848e2951ed61")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	result, err := creatorCollection.UpdateOne(ctx,
+		bson.M{"_id": id},
+		bson.D{
+			{"$set", bson.D{
+				{"description", "I love crash course"},
+			}},
+		},
+	)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	fmt.Printf("Updated %v Document(s)\n", result.ModifiedCount)
+
+	fmt.Println("---\t---\t---\t---\t---")
+
+	// #1 Update many documents
+	creator_id, err := primitive.ObjectIDFromHex("6220d932b89c96822aa90acc")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	result, err = videoCollection.UpdateMany(ctx, 
+		bson.M{"creator_id": creator_id},
+		bson.D{
+			{"$set", bson.D{
+				{"tags", bson.A{"tutorial", "freeCodeCamp", "js_framework"},},
+			}},
+		},
+	)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	fmt.Printf("Updated %v Document(s)\n", result.ModifiedCount)
+
+	fmt.Println("---\t---\t---\t---\t---")
+
+	// #1 Replace entire one document
+	result, err = creatorCollection.ReplaceOne(ctx,
+		bson.M{"name": "Traversy Media"},
+		bson.M{
+			"name": "Brad Traversy",
+			"description": "Crash Course anything!",
+		},
+	)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	fmt.Printf("Updated %v Document(s)\n", result.ModifiedCount)
+}
+
 func main() {
 	// Load MONGO_URI from .env
 	err := godotenv.Load()
@@ -158,7 +216,11 @@ func main() {
 	videoCollection := gomongodbDatabase.Collection("video")
 	creatorCollection := gomongodbDatabase.Collection("creator")
 
-	readData(ctx, videoCollection, creatorCollection)
 	createData(ctx, videoCollection, creatorCollection)
 
+	readData(ctx, videoCollection, creatorCollection)
+
+	updateData(ctx, videoCollection, creatorCollection)
+
+	
 }
