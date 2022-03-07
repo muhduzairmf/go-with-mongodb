@@ -185,6 +185,33 @@ func updateData(ctx context.Context, videoCollection *mongo.Collection, creatorC
 	fmt.Printf("Updated %v Document(s)\n", result.ModifiedCount)
 }
 
+func deleteData(ctx context.Context, videoCollection *mongo.Collection, creatorCollection *mongo.Collection)  {
+	// #1 Delete many documents
+	creator_id, err := primitive.ObjectIDFromHex("6220d932b89c96822aa90acc")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	result, err := videoCollection.DeleteMany(ctx, bson.M{"creator_id": creator_id})
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	fmt.Printf("Delete many documents successfull. %v", result.DeletedCount)
+
+	// #1 Delete one document
+	result, err = creatorCollection.DeleteOne(ctx, bson.M{"name": "freeCodeCamp"})
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	fmt.Printf("Delete one document successfull. %v", result.DeletedCount)
+
+	// #1 Delete/Drop the collection
+	err = videoCollection.Drop(ctx)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+}
+
 func main() {
 	// Load MONGO_URI from .env
 	err := godotenv.Load()
@@ -222,5 +249,6 @@ func main() {
 
 	updateData(ctx, videoCollection, creatorCollection)
 
+	deleteData(ctx, videoCollection, creatorCollection)
 	
 }
