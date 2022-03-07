@@ -14,12 +14,33 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// Modelling the data based on the bson
+type Creator struct {
+	ID primitive.ObjectID `bson:"_id,omitempty"`
+	Name string `bson:"name,omitempty"`
+	Description string `bson:"description,omitempty"`
+}
+
+type Video struct {
+	ID primitive.ObjectID `bson:"_id,omitempty"`
+	Title string `bson:"title,omitempty"`
+	Tags []string `bson:"tags,omitempty"`
+	CreatorId interface{} `bson:"creator_id,omitempty"`
+	Duration int32 `bson:"duration,omitempty"`
+}
+
 func createData(ctx context.Context, videoCollection *mongo.Collection, creatorCollection *mongo.Collection)  {
 	// #1 Insert one
-	creatorResult, err := creatorCollection.InsertOne(ctx, bson.D{
-		{Key: "name", Value: "freeCodeCamp"},
-		{Key: "description", Value: "Learn anything for free here!"},
-	})
+	// creatorResult, err := creatorCollection.InsertOne(ctx, bson.D{
+	// 	{Key: "name", Value: "freeCodeCamp"},
+	// 	{Key: "description", Value: "Learn anything for free here!"},
+	// })
+	// or
+	freeCodeCampCreator := Creator{
+		Name: "freeCodeCamp",
+		Description: "Learn anything for free here!",
+	}
+	creatorResult, err := creatorCollection.InsertOne(ctx, freeCodeCampCreator)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -28,28 +49,53 @@ func createData(ctx context.Context, videoCollection *mongo.Collection, creatorC
 	fmt.Println("---\t---\t---\t---\t---")
 	
 	// #1 Insert many
-	videoResult, err := videoCollection.InsertMany(ctx, []interface{}{
-		bson.D{
-			{"title", "React Tutorial for beginners"},
-			// The first (title) is a key, and the second is value
-			{"tags", bson.A{"programming", "tutorial", "tech"}},
-			// bson.A is represents array in MongoDB
-			{"duration", 300},
-			{"creator_id", creatorResult.InsertedID},
-		},
-		bson.D{
-			{"title", "Vue Tutorial for beginners"},
-			{"tags", bson.A{"programming", "tutorial", "tech"}},
-			{"duration", 280},
-			{"creator_id", creatorResult.InsertedID},
-		},
-		bson.D{
-			{"title", "Node.js Tutorial for beginners"},
-			{"tags", bson.A{"programming", "tutorial", "tech"}},
-			{"duration", 500},
-			{"creator_id", creatorResult.InsertedID},
-		},
-	})
+	// videoResult, err := videoCollection.InsertMany(ctx, []interface{}{
+	// 	bson.D{
+	// 		{"title", "React Tutorial for beginners"},
+	// 		// The first (title) is a key, and the second is value
+	// 		{"tags", bson.A{"programming", "tutorial", "tech"}},
+	// 		// bson.A is represents array in MongoDB
+	// 		{"duration", 300},
+	// 		{"creator_id", creatorResult.InsertedID},
+	// 	},
+	// 	bson.D{
+	// 		{"title", "Vue Tutorial for beginners"},
+	// 		{"tags", bson.A{"programming", "tutorial", "tech"}},
+	// 		{"duration", 280},
+	// 		{"creator_id", creatorResult.InsertedID},
+	// 	},
+	// 	bson.D{
+	// 		{"title", "Node.js Tutorial for beginners"},
+	// 		{"tags", bson.A{"programming", "tutorial", "tech"}},
+	// 		{"duration", 500},
+	// 		{"creator_id", creatorResult.InsertedID},
+	// 	},
+	// })
+	// or
+	var freeCodeCampVideos [3]Video
+	freeCodeCampVideos[0] = Video{
+		Title: "React Tutorial for beginners",
+		Tags: []string{"programming", "tutorial", "tech"},
+		CreatorId: creatorResult.InsertedID,
+		Duration: 300,
+	}
+	freeCodeCampVideos[1] = Video{
+		Title: "Vue Tutorial for beginners",
+		Tags: []string{"programming", "tutorial", "tech"},
+		CreatorId: creatorResult.InsertedID,
+		Duration: 280,
+	}
+	freeCodeCampVideos[2] = Video{
+		Title: "Node.js Tutorial for beginners",
+		Tags: []string{"programming", "tutorial", "tech"},
+		CreatorId: creatorResult.InsertedID,
+		Duration: 500,
+	}
+	fCCVideos := make([]interface{}, len(freeCodeCampVideos))
+	for index, video := range freeCodeCampVideos {
+		fCCVideos[index] = video
+	}
+	videoResult, err := videoCollection.InsertMany(ctx, fCCVideos)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -63,6 +109,7 @@ func readData(ctx context.Context, videoCollection *mongo.Collection, creatorCol
 
 	// #1 Get all documents from a collection, good for small dataset
 	var videos []bson.M
+	// or var videos []Videos
 	err = cursor.All(ctx, &videos)
 	if err != nil { log.Fatal(err.Error()) }
 
@@ -84,6 +131,7 @@ func readData(ctx context.Context, videoCollection *mongo.Collection, creatorCol
 
 	// #1 Get a single document from a collection
 	var creator bson.M
+	// or var creator Creator
 	err = creatorCollection.FindOne(ctx, bson.M{}).Decode(&creator)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -99,6 +147,7 @@ func readData(ctx context.Context, videoCollection *mongo.Collection, creatorCol
 	}
 
 	var videosFiltered []bson.M
+	// or var videosFiltered Video
 	err = filterCursor.All(ctx, &videosFiltered)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -245,10 +294,10 @@ func main() {
 
 	createData(ctx, videoCollection, creatorCollection)
 
-	readData(ctx, videoCollection, creatorCollection)
+	//readData(ctx, videoCollection, creatorCollection)
 
-	updateData(ctx, videoCollection, creatorCollection)
+	//updateData(ctx, videoCollection, creatorCollection)
 
-	deleteData(ctx, videoCollection, creatorCollection)
+	//deleteData(ctx, videoCollection, creatorCollection)
 	
 }
